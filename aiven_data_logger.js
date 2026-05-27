@@ -50,7 +50,6 @@ app.post("/raw_logs", (req, res) => {
 
   res.json({ ok: true });
 });
-  }
 
   try {
     // ✅ Find device
