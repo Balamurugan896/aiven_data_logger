@@ -63,9 +63,9 @@ app.post("/raw_logs", async (req, res) => {
 
     // Insert log
     await pool.execute(
-      "INSERT INTO raw_logs (device_id, payload) VALUES (?, ?)",
-      [deviceId, JSON.stringify(payload)]
-    );
+      "INSERT INTO raw_logs (device_id, payload) VALUES (?, CAST(? AS JSON))",
+       [deviceId, JSON.stringify(payload)]
+     );
 
     console.log("AUTO INSERT SUCCESS");
 
