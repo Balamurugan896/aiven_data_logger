@@ -5,21 +5,36 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "10mb" })); // important for GSM large payloads
 
-// MySQL Pool
+// ======================
+// DEBUG ENV CHECK (Render fix)
+// ======================
+console.log("DB_HOST:", process.env.DB_HOST);
+console.log("DB_USER:", process.env.DB_USER);
+
+// ======================
+// MYSQL POOL (AIVEN)
+// ======================
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   port: process.env.DB_PORT || 16587,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  ssl: { rejectUnauthorized: false },
+
+  ssl: {
+    rejectUnauthorized: false,
+  },
+
   waitForConnections: true,
   connectionLimit: 10,
+  connectTimeout: 20000,
 });
 
-// Extract IMEI
+// ======================
+// DEVICE IDENTIFIER
+// ======================
 const getDeviceIdentifier = (payload) => {
   const raw =
     payload?.data?.mac ||
@@ -31,20 +46,31 @@ const getDeviceIdentifier = (payload) => {
   return raw ? raw.toString().trim().toUpperCase() : null;
 };
 
-// Test route
+// ======================
+// TEST ROUTE
+// ======================
 app.get("/test", (req, res) => {
-  res.send("Server working ✅");
+  res.send("Server Working ✔");
 });
 
-// MAIN ROUTE (FIXED)
+// ======================
+// MAIN GSM API
+// ======================
 app.post("/raw_logs", async (req, res) => {
   try {
-
-    console.log("🔥 BEFORE INSERT");
+    console.log("🔥 GSM REQUEST RECEIVED");
+    console.log("BODY:", JSON.stringify(req.body));
 
     const payload = req.body;
     const deviceKey = getDeviceIdentifier(payload);
 
+    if (!deviceKey) {
+      return res.status(400).json({ error: "Missing IMEI/MAC" });
+    }
+
+    // ======================
+    // FIND DEVICE
+    // ======================
     const [devices] = await pool.execute(
       "SELECT id FROM devices WHERE imei = ? LIMIT 1",
       [deviceKey]
@@ -56,21 +82,34 @@ app.post("/raw_logs", async (req, res) => {
 
     const deviceId = devices[0].id;
 
-    // ✅ STEP 5: ADD HERE (THIS IS THE IMPORTANT PART)
+    // ======================
+    // INSERT LOG
+    // ======================
+    console.log("🔥 BEFORE INSERT");
+
     const result = await pool.execute(
       "INSERT INTO raw_logs (device_id, payload) VALUES (?, ?)",
       [deviceId, JSON.stringify(payload)]
     );
 
-    console.log("✅ INSERT RESULT:", result);
+    console.log("✅ INSERT SUCCESS:", result[0].insertId);
 
     return res.json({
       status: "log stored",
-      device_id: deviceId
+      device_id: deviceId,
     });
 
   } catch (err) {
-    console.error("MYSQL ERROR:", err);
+    console.error("❌ MYSQL ERROR:", err);
     return res.status(500).json({ error: err.message });
   }
+});
+
+// ======================
+// START SERVER
+// ======================
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
