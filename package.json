@@ -1,0 +1,14 @@
+{
+  "name": "aiven_data_logger",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "aiven_data_logger.js",
+  "scripts": {
+    "start": "node aiven_data_logger.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.0.0",
+    "express": "^5.1.0",
+    "mysql2": "^3.14.0"
+  }
+}
