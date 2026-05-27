@@ -43,22 +43,13 @@ app.get("/test", (req, res) => {
 });
 
 // ✅ Main API Route
-app.post("/raw_logs", async (req, res) => {
-  console.log("---- AUTO REQUEST ----");
-  console.log("Time:", new Date().toISOString());
+app.post("/raw_logs", (req, res) => {
+  console.log("🔥 GSM HIT RECEIVED");
+  console.log("Headers:", req.headers);
   console.log("Body:", JSON.stringify(req.body));
 
-  const payload = req.body;
-
-  // ✅ Extract Device Identifier
-  const deviceKey = getDeviceIdentifier(payload);
-
-  console.log("Device Identifier:", deviceKey);
-
-  if (!deviceKey) {
-    return res.status(400).json({
-      error: "MAC/IMEI missing",
-    });
+  res.json({ ok: true });
+});
   }
 
   try {
