@@ -75,8 +75,9 @@ app.post("/raw_logs", async (req, res) => {
     });
 
   } catch (err) {
-    console.error("MYSQL ERROR:", err);
-    return res.status(500).json({ error: err.message });
+      console.error("MYSQL ERROR:", err);
+      console.error("SQL:", err.sql);
+      console.error("CODE:", err.code);
   }
 });
 
